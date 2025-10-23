@@ -1,0 +1,903 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HyperSwap Face Swapper</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 40px;
+            max-width: 1200px;
+            width: 100%;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 40px;
+            font-size: 1.1em;
+        }
+
+        .upload-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .settings-section {
+            background: #f8f9ff;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 30px;
+        }
+
+        .settings-section h3 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.2em;
+        }
+
+        .setting-row {
+            margin-bottom: 20px;
+        }
+
+        .setting-row label {
+            display: block;
+            color: #555;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+
+        .checkbox-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .checkbox-wrapper input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+
+        .slider-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .slider-wrapper input[type="range"] {
+            flex: 1;
+            height: 8px;
+            border-radius: 5px;
+            background: #ddd;
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        .slider-wrapper input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #667eea;
+            cursor: pointer;
+        }
+
+        .slider-wrapper input[type="range"]::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #667eea;
+            cursor: pointer;
+            border: none;
+        }
+
+        .slider-value {
+            min-width: 50px;
+            text-align: right;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .setting-description {
+            font-size: 0.9em;
+            color: #777;
+            margin-top: 5px;
+        }
+
+        .upload-box {
+            border: 3px dashed #667eea;
+            border-radius: 15px;
+            padding: 30px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            background: #f8f9ff;
+        }
+
+        .upload-box:hover {
+            border-color: #764ba2;
+            background: #f0f2ff;
+            transform: translateY(-2px);
+        }
+
+        .upload-box.drag-over {
+            border-color: #764ba2;
+            background: #e0e7ff;
+            transform: scale(1.02);
+        }
+
+        .upload-box.has-image {
+            border-color: #10b981;
+            background: #f0fdf4;
+        }
+
+        .upload-box h3 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+
+        .upload-icon {
+            font-size: 3em;
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+
+        .upload-box.has-image .upload-icon {
+            color: #10b981;
+        }
+
+        .preview-image {
+            max-width: 100%;
+            max-height: 300px;
+            margin-top: 15px;
+            border-radius: 10px;
+            display: none;
+        }
+
+        .preview-image.show {
+            display: block;
+        }
+
+        .preview-video {
+            max-width: 100%;
+            max-height: 300px;
+            margin-top: 15px;
+            border-radius: 10px;
+            display: none;
+        }
+
+        #targetPreviewContainer {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .target-preview-item {
+            position: relative;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 2px solid #e5e7eb;
+        }
+
+        .target-preview-item img,
+        .target-preview-item video {
+            width: 100%;
+            height: 100px;
+            object-fit: cover;
+            display: block;
+        }
+
+        .target-preview-item .file-name {
+            font-size: 0.7em;
+            color: #666;
+            padding: 3px;
+            background: rgba(255, 255, 255, 0.9);
+            text-align: center;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .file-count-badge {
+            display: inline-block;
+            background: #667eea;
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        .swap-button {
+            width: 100%;
+            padding: 18px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.3em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 30px;
+        }
+
+        .swap-button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+        }
+
+        .swap-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .result-section {
+            display: none;
+            text-align: center;
+            margin-top: 30px;
+            padding-top: 30px;
+            border-top: 2px solid #e5e7eb;
+        }
+
+        .result-section.show {
+            display: block;
+        }
+
+        .result-section h2 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        .result-image {
+            max-width: 100%;
+            max-height: 500px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            margin-bottom: 20px;
+        }
+        
+        .result-video {
+            max-width: 100%;
+            max-height: 500px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            margin-bottom: 20px;
+        }
+
+        .result-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .result-item {
+            background: #f8f9ff;
+            border-radius: 10px;
+            padding: 15px;
+            text-align: center;
+        }
+
+        .result-item h4 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 0.9em;
+            word-break: break-all;
+        }
+
+        .result-item img,
+        .result-item video {
+            max-width: 100%;
+            max-height: 300px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+        }
+
+        .result-item .status {
+            font-size: 0.85em;
+            padding: 5px 10px;
+            border-radius: 5px;
+            display: inline-block;
+            margin-bottom: 10px;
+        }
+
+        .result-item .status.success {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .result-item .status.error {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .download-button {
+            padding: 15px 40px;
+            background: #10b981;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+            margin: 5px;
+        }
+
+        .download-button:hover {
+            background: #059669;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(16, 185, 129, 0.4);
+        }
+
+        .download-button.batch {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-size: 1.3em;
+            padding: 18px 50px;
+        }
+
+        .download-button.batch:hover {
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .loading.show {
+            display: block;
+        }
+
+        .spinner {
+            border: 4px solid #f3f4f6;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+
+        .progress-container {
+            width: 100%;
+            max-width: 600px;
+            margin: 20px auto;
+            display: none;
+        }
+
+        .progress-container.show {
+            display: block;
+        }
+
+        .progress-bar-bg {
+            width: 100%;
+            height: 30px;
+            background: #e5e7eb;
+            border-radius: 15px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            width: 0%;
+            transition: width 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 0.9em;
+        }
+
+        .progress-text {
+            text-align: center;
+            margin-top: 10px;
+            color: #666;
+            font-size: 0.95em;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .message {
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+            display: none;
+        }
+
+        .message.show {
+            display: block;
+        }
+
+        .message.error {
+            background: #fee;
+            color: #c33;
+            border: 1px solid #fcc;
+        }
+
+        .message.success {
+            background: #efe;
+            color: #3c3;
+            border: 1px solid #cfc;
+        }
+
+        @media (max-width: 768px) {
+            .upload-section {
+                grid-template-columns: 1fr;
+            }
+
+            h1 {
+                font-size: 2em;
+            }
+
+            .container {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎭 HyperSwap Face Swapper</h1>
+        <p class="subtitle">Upload a source image and a target image or video to swap faces</p>
+
+        <div class="upload-section">
+            <div class="upload-box" id="sourceBox" onclick="document.getElementById('sourceInput').click()">
+                <div class="upload-icon">📷</div>
+                <h3>Source Image</h3>
+                <p>Click or drag & drop the face you want to use</p>
+                <img id="sourcePreview" class="preview-image" alt="Source preview">
+                <input type="file" id="sourceInput" accept="image/*" onchange="handleFileSelect(event, 'source')">
+            </div>
+
+            <div class="upload-box" id="targetBox" onclick="document.getElementById('targetInput').click()">
+                <div class="upload-icon">📷</div>
+                <h3>Target Image(s) or Video(s)</h3>
+                <p>Click or drag & drop multiple images or videos (batch processing)</p>
+                <div id="targetPreviewContainer"></div>
+                <input type="file" id="targetInput" accept="image/*,video/*" multiple onchange="handleFileSelect(event, 'target')">
+            </div>
+        </div>
+
+        <div class="settings-section">
+            <h3>⚙️ Face Enhancement Settings (CodeFormer)</h3>
+            
+            <div class="setting-row">
+                <div class="checkbox-wrapper">
+                    <input type="checkbox" id="enhanceFace" checked>
+                    <label for="enhanceFace" style="margin-bottom: 0;">Enable Face Restoration & Enhancement</label>
+                </div>
+                <div class="setting-description">Restore and improve facial features using CodeFormer AI model</div>
+            </div>
+
+            <div class="setting-row">
+                <label for="enhancementWeight">Enhancement Strength: <span class="slider-value" id="weightValue">0.5</span></label>
+                <div class="slider-wrapper">
+                    <span>0.0</span>
+                    <input type="range" id="enhancementWeight" min="0" max="1" step="0.1" value="0.5" 
+                           oninput="updateSliderValue('weightValue', this.value)">
+                    <span>1.0</span>
+                </div>
+                <div class="setting-description">Higher values = more enhancement (0.0 = subtle, 1.0 = maximum)</div>
+            </div>
+
+            <div class="setting-row">
+                <label for="enhancementBlend">Original Face Preservation: <span class="slider-value" id="blendValue">80%</span></label>
+                <div class="slider-wrapper">
+                    <span>0%</span>
+                    <input type="range" id="enhancementBlend" min="0" max="100" step="5" value="80" 
+                           oninput="updateSliderValue('blendValue', this.value, '%')">
+                    <span>100%</span>
+                </div>
+                <div class="setting-description">Higher values = more original face preserved (balance between enhancement and original)</div>
+            </div>
+        </div>
+
+        <button class="swap-button" id="swapButton" onclick="performSwap()" disabled>
+            🔄 Swap Faces
+        </button>
+
+        <div class="message" id="message"></div>
+
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>Processing face swap... This may take a moment.</p>
+        </div>
+
+        <div class="progress-container" id="progressContainer">
+            <div class="progress-bar-bg">
+                <div class="progress-bar-fill" id="progressBarFill">0%</div>
+            </div>
+            <div class="progress-text" id="progressText">Initializing...</div>
+        </div>
+
+        <div class="result-section" id="resultSection">
+            <h2>✨ Results</h2>
+            <div id="batchDownloadContainer" style="text-align: center; margin-bottom: 30px; display: none;">
+                <a class="download-button batch" id="batchDownloadButton">
+                    📦 Download All Results (ZIP)
+                </a>
+            </div>
+            <div id="resultGrid" class="result-grid"></div>
+        </div>
+    </div>
+
+    <script>
+        let sourceFile = null;
+        let targetFiles = [];
+
+        // Set up drag and drop for both boxes
+        function setupDragAndDrop() {
+            const sourceBox = document.getElementById('sourceBox');
+            const targetBox = document.getElementById('targetBox');
+
+            setupDropZone(sourceBox, 'source');
+            setupDropZone(targetBox, 'target');
+        }
+
+        function setupDropZone(element, type) {
+            // Prevent default drag behaviors
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                element.addEventListener(eventName, preventDefaults, false);
+            });
+
+            // Highlight drop zone when item is dragged over it
+            ['dragenter', 'dragover'].forEach(eventName => {
+                element.addEventListener(eventName, () => {
+                    element.classList.add('drag-over');
+                }, false);
+            });
+
+            ['dragleave', 'drop'].forEach(eventName => {
+                element.addEventListener(eventName, () => {
+                    element.classList.remove('drag-over');
+                }, false);
+            });
+
+            // Handle dropped files
+            element.addEventListener('drop', (e) => {
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    if (type === 'target') {
+                        handleMultipleFiles(files, type);
+                    } else {
+                        handleFile(files[0], type);
+                    }
+                }
+            }, false);
+        }
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        function handleFile(file, type) {
+            const isImage = file.type.startsWith('image/');
+            const isVideo = file.type.startsWith('video/');
+
+            if (type === 'source' && !isImage) {
+                showMessage('Source must be an image file.', 'error');
+                return;
+            }
+            if (type === 'target' && !isImage && !isVideo) {
+                showMessage('Target must be an image or video file.', 'error');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                if (type === 'source') {
+                    sourceFile = file;
+                    document.getElementById('sourcePreview').src = e.target.result;
+                    document.getElementById('sourcePreview').classList.add('show');
+                    document.getElementById('sourcePreview').style.display = 'block';
+                    document.getElementById('sourceBox').classList.add('has-image');
+                }
+                updateSwapButton();
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function handleMultipleFiles(files, type) {
+            targetFiles = [];
+            const container = document.getElementById('targetPreviewContainer');
+            container.innerHTML = '';
+
+            Array.from(files).forEach((file, index) => {
+                const isImage = file.type.startsWith('image/');
+                const isVideo = file.type.startsWith('video/');
+
+                if (!isImage && !isVideo) {
+                    return; // Skip invalid files
+                }
+
+                targetFiles.push(file);
+
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const itemDiv = document.createElement('div');
+                    itemDiv.className = 'target-preview-item';
+
+                    if (isImage) {
+                        const img = document.createElement('img');
+                        img.src = e.target.result;
+                        itemDiv.appendChild(img);
+                    } else {
+                        const video = document.createElement('video');
+                        video.src = e.target.result;
+                        video.muted = true;
+                        video.loop = true;
+                        itemDiv.appendChild(video);
+                    }
+
+                    const fileName = document.createElement('div');
+                    fileName.className = 'file-name';
+                    fileName.textContent = file.name;
+                    itemDiv.appendChild(fileName);
+
+                    container.appendChild(itemDiv);
+                };
+                reader.readAsDataURL(file);
+            });
+
+            if (targetFiles.length > 0) {
+                document.getElementById('targetBox').classList.add('has-image');
+                const badge = document.createElement('div');
+                badge.className = 'file-count-badge';
+                badge.textContent = `${targetFiles.length} file(s) selected`;
+                container.appendChild(badge);
+            }
+
+            updateSwapButton();
+        }
+        
+        function handleFileSelect(event, type) {
+            if (type === 'target') {
+                const files = event.target.files;
+                if (files.length > 0) {
+                    handleMultipleFiles(files, type);
+                }
+            } else {
+                const file = event.target.files[0];
+                if (file) handleFile(file, type);
+            }
+        }
+
+        // Initialize drag and drop on page load
+        document.addEventListener('DOMContentLoaded', setupDragAndDrop);
+
+        function updateSliderValue(elementId, value, suffix = '') {
+            document.getElementById(elementId).textContent = value + suffix;
+        }
+
+        function updateSwapButton() {
+            const button = document.getElementById('swapButton');
+            button.disabled = !(sourceFile && targetFiles.length > 0);
+        }
+
+        function showMessage(text, type) {
+            const message = document.getElementById('message');
+            message.textContent = text;
+            message.className = 'message show ' + type;
+        }
+
+        function hideMessage() {
+            document.getElementById('message').className = 'message';
+        }
+
+        async function performSwap() {
+            if (!sourceFile || targetFiles.length === 0) {
+                showMessage('Please select a source image and at least one target file.', 'error');
+                return;
+            }
+
+            hideMessage();
+            document.getElementById('resultSection').classList.remove('show');
+            document.getElementById('swapButton').disabled = true;
+
+            // Check if any target is a video to show progress bar
+            const hasVideo = targetFiles.some(f => f.type.startsWith('video/'));
+            
+            if (hasVideo) {
+                document.getElementById('progressContainer').classList.add('show');
+                document.getElementById('loading').classList.remove('show');
+            } else {
+                document.getElementById('loading').classList.add('show');
+                document.getElementById('progressContainer').classList.remove('show');
+            }
+
+            const formData = new FormData();
+            formData.append('source', sourceFile);
+            
+            // Append all target files
+            targetFiles.forEach(file => {
+                formData.append('target', file);
+            });
+            
+            // Add enhancement settings
+            const enhanceFace = document.getElementById('enhanceFace').checked;
+            const enhancementWeight = document.getElementById('enhancementWeight').value;
+            const enhancementBlend = document.getElementById('enhancementBlend').value;
+            
+            formData.append('enhance_face', enhanceFace);
+            formData.append('enhancement_weight', enhancementWeight);
+            formData.append('enhancement_blend', enhancementBlend);
+
+            try {
+                const response = await fetch('/swap', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showMessage(data.message, 'success');
+                    
+                    // Show batch download button if zip is available (multiple files)
+                    if (data.zip_filename) {
+                        const batchDownloadContainer = document.getElementById('batchDownloadContainer');
+                        const batchDownloadButton = document.getElementById('batchDownloadButton');
+                        batchDownloadButton.href = '/download/' + data.zip_filename;
+                        batchDownloadContainer.style.display = 'block';
+                    } else {
+                        document.getElementById('batchDownloadContainer').style.display = 'none';
+                    }
+                    
+                    // Display all results
+                    const resultGrid = document.getElementById('resultGrid');
+                    resultGrid.innerHTML = '';
+                    
+                    data.results.forEach((result, index) => {
+                        const resultItem = document.createElement('div');
+                        resultItem.className = 'result-item';
+                        
+                        const title = document.createElement('h4');
+                        title.textContent = result.filename;
+                        resultItem.appendChild(title);
+                        
+                        const status = document.createElement('div');
+                        status.className = 'status ' + (result.success ? 'success' : 'error');
+                        status.textContent = result.success ? '✓ Success' : '✗ Failed';
+                        resultItem.appendChild(status);
+                        
+                        if (result.success && result.output_filename) {
+                            const isVideoResult = result.output_filename.endsWith('.mp4');
+                            
+                            if (isVideoResult) {
+                                const video = document.createElement('video');
+                                video.src = '/view/' + result.output_filename;
+                                video.controls = true;
+                                video.loop = true;
+                                resultItem.appendChild(video);
+                            } else {
+                                const img = document.createElement('img');
+                                img.src = '/view/' + result.output_filename;
+                                resultItem.appendChild(img);
+                            }
+                            
+                            const downloadBtn = document.createElement('a');
+                            downloadBtn.className = 'download-button';
+                            downloadBtn.href = '/download/' + result.output_filename;
+                            downloadBtn.download = isVideoResult ? 'swapped_video.mp4' : 'swapped_face.jpg';
+                            downloadBtn.textContent = '⬇️ Download';
+                            downloadBtn.style.fontSize = '0.9em';
+                            downloadBtn.style.padding = '10px 20px';
+                            resultItem.appendChild(downloadBtn);
+                        } else {
+                            const errorMsg = document.createElement('p');
+                            errorMsg.style.color = '#991b1b';
+                            errorMsg.style.fontSize = '0.85em';
+                            errorMsg.textContent = result.message;
+                            resultItem.appendChild(errorMsg);
+                        }
+                        
+                        resultGrid.appendChild(resultItem);
+                    });
+                    
+                    document.getElementById('resultSection').classList.add('show');
+                } else {
+                    showMessage(data.message, 'error');
+                }
+            } catch (error) {
+                showMessage('Error: ' + error.message, 'error');
+            } finally {
+                document.getElementById('loading').classList.remove('show');
+                document.getElementById('progressContainer').classList.remove('show');
+                document.getElementById('swapButton').disabled = false;
+            }
+        }
+
+        function subscribeToProgress(taskId) {
+            const eventSource = new EventSource('/progress/' + taskId);
+            
+            eventSource.onmessage = function(event) {
+                try {
+                    const data = JSON.parse(event.data);
+                    
+                    if (data.error) {
+                        console.error('Progress error:', data.error);
+                        eventSource.close();
+                        return;
+                    }
+
+                    if (data.keepalive) {
+                        return; // Just a keepalive ping
+                    }
+
+                    // Update progress bar
+                    const progressBarFill = document.getElementById('progressBarFill');
+                    const progressText = document.getElementById('progressText');
+                    
+                    if (progressBarFill && progressText) {
+                        progressBarFill.style.width = data.percentage + '%';
+                        progressBarFill.textContent = data.percentage + '%';
+                        progressText.textContent = data.message;
+                    }
+
+                    // Close connection when complete
+                    if (data.percentage >= 100) {
+                        eventSource.close();
+                    }
+                } catch (e) {
+                    console.error('Error parsing progress data:', e);
+                }
+            };
+
+            eventSource.onerror = function(error) {
+                console.error('EventSource error:', error);
+                eventSource.close();
+            };
+        }
+    </script>
+</body>
+</html>

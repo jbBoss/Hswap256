@@ -4,3 +4,7 @@ __pycache__
 .jobs
 .idea
 .vscode
+htperswap/__pycache__
+htperswap/outputs
+htperswap/uploads
+ven
